@@ -4,12 +4,18 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import random
 import os
-import database
-import config
+try:
+    from . import database
+    from . import config
+except ImportError:
+    import database
+    import config
 from flask_cors import CORS
 
-BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-app = Flask(__name__, static_folder=BASE_DIR)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# Note: index.html is actually in the parent directory
+PARENT_DIR = os.path.dirname(BASE_DIR)
+app = Flask(__name__, static_folder=PARENT_DIR, template_folder=PARENT_DIR)
 CORS(app)
 
 # Initialize Database
@@ -17,11 +23,11 @@ database.init_db()
 
 @app.route('/')
 def index():
-    return send_from_directory(BASE_DIR, 'index.html')
+    return send_from_directory(PARENT_DIR, 'index.html')
 
 @app.route('/<path:filename>')
 def serve_static(filename):
-    return send_from_directory(BASE_DIR, filename)
+    return send_from_directory(PARENT_DIR, filename)
 
 def send_email(target_email, otp):
     try:
