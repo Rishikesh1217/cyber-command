@@ -17,14 +17,9 @@ PUBLIC_FOLDER = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__f
 
 app = Flask(__name__, static_folder=PUBLIC_FOLDER, static_url_path='')
 
-# --- STATIC FILE SERVING ---
-@app.route('/')
-def serve_index():
-    return send_from_directory(PUBLIC_FOLDER, 'index.html')
 
-@app.route('/<path:path>')
-def serve_static(path):
-    return send_from_directory(PUBLIC_FOLDER, path)
+# --- MONOLITHIC ROUTING ---
+# (Specific API routes are defined below)
 
 # --- DATABASE LOGIC (INLINED) ---
 def get_db_conn():
@@ -203,3 +198,18 @@ def dashboard_data():
         return jsonify({"logs": formatted_logs})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+# --- CATCH-ALL ROUTE (MUST BE LAST) ---
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def catch_all(path):
+    # This matches the naked domain / or any deep-linked page
+    if not path or path == '/':
+        return send_from_directory(PUBLIC_FOLDER, 'index.html')
+    
+    # Check if the requested path is a real file in public/
+    if os.path.isfile(os.path.join(PUBLIC_FOLDER, path)):
+        return send_from_directory(PUBLIC_FOLDER, path)
+        
+    # Fallback for SPA (Single Page App) routing
+    return send_from_directory(PUBLIC_FOLDER, 'index.html')
