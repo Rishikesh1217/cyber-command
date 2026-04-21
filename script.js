@@ -158,7 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } catch (err) {
                 console.error("API Error:", err);
-                alert("Backend Connection Lost. Ensure server.py is running.");
+                alert("Backend Connection Lost. Ensure the API is running.");
             }
         });
     }
