@@ -19,6 +19,7 @@ app = Flask(__name__)
 
 # --- STATIC FILE SERVING ---
 @app.route('/')
+@app.route('/api/index.py')
 def serve_index():
     return send_from_directory(PUBLIC_FOLDER, 'index.html')
 
