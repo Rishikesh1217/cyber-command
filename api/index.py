@@ -15,12 +15,20 @@ DB_PATH = "/tmp/security_system.db"
 # Path to static files
 PUBLIC_FOLDER = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'public')
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder=PUBLIC_FOLDER, static_url_path='')
 
 # --- STATIC FILE SERVING ---
 @app.route('/')
 @app.route('/api/index.py')
 def serve_index():
+    return send_from_directory(PUBLIC_FOLDER, 'index.html')
+
+@app.errorhandler(404)
+def handle_404(e):
+    # If the path is for the API, return a real 404
+    if request.path.startswith('/api/'):
+        return jsonify({"error": "Not Found", "path": request.path}), 404
+    # Otherwise, it's a request for the frontend (like the naked domain /)
     return send_from_directory(PUBLIC_FOLDER, 'index.html')
 
 @app.route('/<path:path>')
