@@ -1,17 +1,111 @@
 import sys
 import os
+import sqlite3
+import random
+import time
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-try:
-    from server import app
-except Exception as e:
-    from flask import Flask, jsonify
-    app = Flask(__name__)
+from flask import Flask, request, jsonify, make_response
 
-    @app.route('/api/debug', methods=['GET'])
-    def debug():
-        return jsonify({"import_error": str(e), "type": type(e).__name__})
+app = Flask(__name__)
 
-    @app.route('/api/<path:path>', methods=['GET', 'POST'])
-    def catch_all(path):
-        return jsonify({"import_error": str(e), "path": path}), 500
+DB = "/tmp/cyber.db"
+
+def cors(response):
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+    return response
+
+@app.after_request
+def after_request(response):
+    return cors(response)
+
+@app.route('/api/<path:path>', methods=['OPTIONS'])
+def options(path):
+    return cors(make_response('', 204))
+
+def get_db():
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def init_db():
+    conn = get_db()
+    conn.executescript('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS otps (
+            email TEXT PRIMARY KEY,
+            otp TEXT NOT NULL,
+            expires_at REAL NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT,
+            event TEXT,
+            timestamp TEXT,
+            status TEXT,
+            location TEXT
+        );
+    ''')
+    if not conn.execute("SELECT 1 FROM users WHERE email='admin@example.com'").fetchone():
+        conn.execute("INSERT INTO users (email, password) VALUES (?, ?)",
+                     ("admin@example.com", "password123"))
+    conn.commit()
+    conn.close()
+
+init_db()
+
+@app.route('/api/health', methods=['GET'])
+def health():
+    return jsonify({"status": "ok", "time": time.strftime('%H:%M:%S')})
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.get_json(silent=True) or {}
+    email = data.get('email', '')
+    password = data.get('password', '')
+    conn = get_db()
+    user = conn.execute("SELECT 1 FROM users WHERE email=? AND password=?",
+                        (email, password)).fetchone()
+    conn.close()
+    if user:
+        otp = str(random.randint(100000, 999999))
+        conn = get_db()
+        conn.execute("INSERT OR REPLACE INTO otps VALUES (?, ?, ?)",
+                     (email, otp, time.time() + 300))
+        conn.commit()
+        conn.close()
+        return jsonify({"success": True, "message": "OTP sent", "mock_otp": otp})
+    return jsonify({"success": False, "message": "Invalid credentials"}), 401
+
+@app.route('/api/verify-otp', methods=['POST'])
+def verify_otp():
+    data = request.get_json(silent=True) or {}
+    email = data.get('email', '')
+    otp = data.get('otp', '')
+    conn = get_db()
+    row = conn.execute("SELECT otp, expires_at FROM otps WHERE email=?", (email,)).fetchone()
+    conn.close()
+    if row and row['otp'] == otp and time.time() < row['expires_at']:
+        conn = get_db()
+        conn.execute("INSERT INTO logs VALUES (NULL,?,?,?,?,?)",
+                     (email, "2FA-OTP", time.strftime('%Y-%m-%d %H:%M:%S'), "success", "Mumbai, IN"))
+        conn.commit()
+        conn.close()
+        return jsonify({"success": True, "message": "Verification successful"})
+    return jsonify({"success": False, "message": "Invalid or expired OTP"}), 401
+
+@app.route('/api/dashboard-data', methods=['GET'])
+def dashboard_data():
+    conn = get_db()
+    rows = conn.execute("SELECT * FROM logs ORDER BY id DESC LIMIT 20").fetchall()
+    conn.close()
+    return jsonify({"logs": [{"id": f"AUTH-{r['id']}", "method": r['event'],
+                               "time": r['timestamp'], "status": r['status'],
+                               "loc": r['location']} for r in rows]})
