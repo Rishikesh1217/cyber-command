@@ -24,9 +24,6 @@ def serve_index():
 
 @app.route('/<path:path>')
 def serve_static(path):
-    # If the path looks like an API call, let it through to the other routes
-    if path.startswith('api/'):
-        return make_response("Not Found", 404)
     return send_from_directory(PUBLIC_FOLDER, path)
 
 # --- DATABASE LOGIC (INLINED) ---
