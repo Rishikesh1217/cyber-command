@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber Command | 2FA Security Portal</title>
+    <meta name="description" content="Secure multi-factor authentication with terminal-style monitoring and persistence.">
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- External Libraries -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- External Assets -->
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <div class="bg-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+    </div>
+    
+    <canvas id="digitalRain"></canvas>
+    <div class="grid-overlay"></div>
+
+    <div id="auth-flow" class="auth-container">
+        <!-- 1. LOGIN SCREEN -->
+        <div id="screen-login" class="screen active">
+            <div class="glass-card">
+                <div class="icon-wrapper"><i data-lucide="lock" size="32"></i></div>
+                <h1>Sign In</h1>
+                <p class="subtitle">Secure Cyber Access Bundle</p>
+                <form id="login-form">
+                    <div class="form-group">
+                        <input type="email" id="email" class="form-input" placeholder=" " required>
+                        <label class="form-label">Email Address</label>
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="password" class="form-input" placeholder=" " required>
+                        <label class="form-label">Password</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Authorize Access <i data-lucide="shield" size="18"></i></button>
+                    <button type="button" class="btn btn-text">Recovery Portal</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- 2. OTP VERIFICATION SCREEN -->
+        <div id="screen-otp" class="screen">
+            <div class="glass-card">
+                <div class="icon-wrapper"><i data-lucide="shield-check" size="32"></i></div>
+                <h1>2FA Challenge</h1>
+                <p class="subtitle">Verification token dispatched</p>
+                
+                <div class="timer-container">
+                    <svg class="timer-svg">
+                        <circle class="timer-circle-bg" cx="40" cy="40" r="38"></circle>
+                        <circle id="timer-progress" class="timer-circle-progress" cx="40" cy="40" r="38"></circle>
+                    </svg>
+                    <div id="timer-display" class="timer-text">02:00</div>
+                </div>
+
+                <div id="demo-otp-notice" style="display: none; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); padding: 0.75rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.85rem; color: var(--accent-blue); text-align: center;">
+                    <i data-lucide="info" size="16" style="vertical-align: middle; margin-right: 4px;"></i>
+                    Demo Mode: Use code <strong id="demo-otp-code">------</strong>
+                </div>
+
+                <div class="otp-container">
+                    <input type="text" maxlength="1" class="form-input otp-input" autofocus>
+                    <input type="text" maxlength="1" class="form-input otp-input">
+                    <input type="text" maxlength="1" class="form-input otp-input">
+                    <input type="text" maxlength="1" class="form-input otp-input">
+                    <input type="text" maxlength="1" class="form-input otp-input">
+                    <input type="text" maxlength="1" class="form-input otp-input">
+                </div>
+                
+                <div id="otp-success-msg" style="display: none; text-align: center; color: var(--accent-green); margin-bottom: 1rem;">
+                    <i data-lucide="check-circle" size="20"></i> Verification Complete
+                </div>
+                
+                <button id="resend-btn" class="btn btn-text"><i data-lucide="refresh-cw" size="16"></i> Resend Bundle</button>
+            </div>
+        </div>
+
+        <!-- 3. RISK ANALYSIS SCREEN -->
+        <div id="screen-risk" class="screen">
+            <div class="glass-card risk-card">
+                <div class="risk-indicator risk-medium">
+                    <i data-lucide="alert-triangle" size="48"></i>
+                </div>
+                <h1>Security Audit</h1>
+                <p class="subtitle">Unusual login pattern detected from a new location.</p>
+                
+                <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem; text-align: left; font-size: 0.9rem;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;"><span>Location:</span> <strong>Mumbai, IN</strong></div>
+                    <div style="display: flex; justify-content: space-between;"><span>Device:</span> <strong>Macintosh (Safari)</strong></div>
+                </div>
+
+                <div style="display: flex; gap: 1rem;">
+                    <button id="risk-approve" class="btn btn-primary">Approve</button>
+                    <button id="risk-block" class="btn" style="background: var(--accent-red); color: white;">Block Access</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. DASHBOARD -->
+    <div id="dashboard" class="dashboard-layout" style="display: none;">
+        <aside class="sidebar">
+            <div class="sidebar-brand"><i data-lucide="shield" size="28"></i> <span>Command Center</span></div>
+            <nav class="nav-menu">
+                <div class="nav-item">
+                    <a href="#" class="nav-link active"><i data-lucide="activity" size="20"></i> Overview</a>
+                </div>
+                <div class="nav-item">
+                    <a href="#" class="nav-link"><i data-lucide="history" size="20"></i> Auth History</a>
+                </div>
+                <div class="nav-item">
+                    <a href="#" class="nav-link"><i data-lucide="users" size="20"></i> Identity Pool</a>
+                </div>
+                <div class="nav-item">
+                    <a href="#" class="nav-link"><i data-lucide="settings" size="20"></i> Security Settings</a>
+                </div>
+                <div style="margin-top: auto; padding-top: 2rem;">
+                    <a href="#" class="nav-link" style="color: var(--accent-red);"><i data-lucide="log-out" size="20"></i> Sign Out</a>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-bar">
+                <div>
+                    <h1>Security Control</h1>
+                    <p style="color: var(--text-secondary);">Authenticated as: <strong id="user-display">Cyber Administrator</strong></p>
+                </div>
+                <div class="user-avatar">AD</div>
+            </header>
+
+            <!-- Overview Section -->
+            <div id="content-overview" class="view-section active">
+                <div class="stats-grid">
+                    <div class="glass-card">
+                        <span style="color: var(--text-secondary); font-size: 0.8rem;">Active Sessions</span>
+                        <div style="font-size: 2rem; font-weight: 800;">06</div>
+                    </div>
+                    <div class="glass-card">
+                        <span style="color: var(--text-secondary); font-size: 0.8rem;">Threat Score</span>
+                        <div style="font-size: 2rem; font-weight: 800; color: var(--accent-green);">02</div>
+                    </div>
+                    <div class="glass-card chart-card">
+                        <h3 style="margin-bottom: 1.5rem;">Traffic Telemetry</h3>
+                        <div class="chart-container">
+                            <canvas id="activityChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="glass-card">
+                        <h3>Recent Events</h3>
+                        <div id="events-list" style="margin-top: 1rem;">
+                            <!-- Populated by script.js -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History Section -->
+            <div id="content-history" class="view-section" style="display: none;">
+                <div class="glass-card">
+                    <h3>Authentication Logs</h3>
+                    <div class="table-responsive">
+                        <table class="cyber-table">
+                            <thead>
+                                <tr>
+                                    <th>Ref ID</th>
+                                    <th>Method</th>
+                                    <th>Timestamp</th>
+                                    <th>Status</th>
+                                    <th>Location</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-table-body">
+                                <!-- Populated by script.js -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Identity Section -->
+            <div id="content-identity" class="view-section" style="display: none;">
+                <div class="glass-card">
+                    <h3>Identities within Cluster</h3>
+                    <div id="identity-list" class="identity-grid">
+                        <!-- Populated by script.js -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Section -->
+            <div id="content-settings" class="view-section" style="display: none;">
+                <div class="glass-card">
+                    <h3>Security Configuration</h3>
+                    <div class="settings-list" style="margin-top: 1.5rem;">
+                        <div class="setting-item">
+                            <div>
+                                <h4>Biometric Enforcement</h4>
+                                <p>Require FaceID/TouchID for all dashboard access.</p>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="setting-item">
+                            <div>
+                                <h4>IP Whitelisting</h4>
+                                <p>Restrict access to corporate VPN ranges only.</p>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
