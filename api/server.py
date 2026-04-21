@@ -1,19 +1,19 @@
 import sys
 import os
 
-# Add api directory to path so absolute imports work on Vercel
-sys.path.insert(0, os.path.dirname(__file__))
+# Must come before any local imports
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import random
 import database
 import config
-from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-# Initialize Database on cold start
+# Initialize DB on cold start
 database.init_db()
 
 def send_email(target_email, otp):
@@ -25,7 +25,7 @@ def send_email(target_email, otp):
         msg['From'] = config.SENDER_EMAIL
         msg['To'] = target_email
         msg['Subject'] = "Your 2FA Verification Code"
-        body = f"<html><body><h2>Your OTP: <b>{otp}</b></h2><p>Valid for 5 minutes.</p></body></html>"
+        body = f"<html><body><h2>OTP: <b>{otp}</b></h2><p>Valid 5 mins.</p></body></html>"
         msg.attach(MIMEText(body, 'html'))
         server = smtplib.SMTP(config.SMTP_SERVER, config.SMTP_PORT)
         server.starttls()
@@ -37,11 +37,15 @@ def send_email(target_email, otp):
         print(f"Email error: {e}")
         return False
 
+@app.route('/api/health', methods=['GET'])
+def health():
+    return jsonify({"status": "ok"})
+
 @app.route('/api/login', methods=['POST'])
 def login():
-    data = request.json
-    email = data.get('email')
-    password = data.get('password')
+    data = request.get_json(silent=True) or {}
+    email = data.get('email', '')
+    password = data.get('password', '')
     if database.verify_user(email, password):
         otp = str(random.randint(100000, 999999))
         database.save_otp(email, otp)
@@ -56,9 +60,9 @@ def login():
 
 @app.route('/api/verify-otp', methods=['POST'])
 def verify_otp():
-    data = request.json
-    email = data.get('email')
-    otp = data.get('otp')
+    data = request.get_json(silent=True) or {}
+    email = data.get('email', '')
+    otp = data.get('otp', '')
     if database.verify_otp_db(email, otp):
         database.add_log(email, "2FA-OTP", "success")
         return jsonify({"success": True, "message": "Verification successful"})
@@ -76,7 +80,3 @@ def dashboard_data():
         "loc": log[5]
     } for log in logs]
     return jsonify({"logs": formatted_logs})
-
-@app.route('/api/health', methods=['GET'])
-def health():
-    return jsonify({"status": "ok"})
