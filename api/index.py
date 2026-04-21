@@ -1,4 +1,5 @@
-from .server import app
+import sys
+import os
+sys.path.insert(0, os.path.dirname(__file__))
 
-# Vercel entry point
-application = app
+from server import app

@@ -2,7 +2,8 @@ import sqlite3
 import os
 import time
 
-DB_NAME = os.path.join(os.path.dirname(os.path.abspath(__file__)), "security_system.db")
+# Vercel filesystem is read-only except /tmp
+DB_NAME = "/tmp/security_system.db"
 
 def init_db():
     conn = sqlite3.connect(DB_NAME)
