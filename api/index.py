@@ -4,7 +4,7 @@ import sqlite3
 import random
 import time
 import traceback
-from flask import Flask, request, jsonify, make_response
+from flask import Flask, request, jsonify, make_response, send_from_directory
 
 # --- CONFIGURATION ---
 SMTP_SERVER = "smtp.gmail.com"
@@ -12,8 +12,22 @@ SMTP_PORT = 587
 SENDER_EMAIL = "your-email@gmail.com"
 SENDER_PASSWORD = "your-app-password"
 DB_PATH = "/tmp/security_system.db"
+# Path to static files
+PUBLIC_FOLDER = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'public')
 
 app = Flask(__name__)
+
+# --- STATIC FILE SERVING ---
+@app.route('/')
+def serve_index():
+    return send_from_directory(PUBLIC_FOLDER, 'index.html')
+
+@app.route('/<path:path>')
+def serve_static(path):
+    # If the path looks like an API call, let it through to the other routes
+    if path.startswith('api/'):
+        return make_response("Not Found", 404)
+    return send_from_directory(PUBLIC_FOLDER, path)
 
 # --- DATABASE LOGIC (INLINED) ---
 def get_db_conn():
