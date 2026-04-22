@@ -65,7 +65,21 @@ try:
 except Exception as e:
     init_error = traceback.format_exc()
 
-# Static files are handled entirely by Vercel
+# Serve Frontend
+@app.route('/')
+def serve_index():
+    return send_from_directory(os.path.join(BASE_DIR, 'public'), 'index.html')
+
+@app.route('/<path:path>')
+def serve_static(path):
+    # Don't intercept API calls
+    if path.startswith('api/'):
+        return jsonify({"error": "Not Found"}), 404
+        
+    public_path = os.path.join(BASE_DIR, 'public')
+    if os.path.exists(os.path.join(public_path, path)):
+        return send_from_directory(public_path, path)
+    return send_from_directory(public_path, 'index.html')
 
 @app.route('/api/health', methods=['GET'])
 def health():
