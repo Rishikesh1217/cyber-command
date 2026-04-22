@@ -5,13 +5,9 @@ import random
 import time
 import traceback
 
-# Base directory is the directory containing api folder
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from flask import Flask, request, jsonify, make_response
 
-from flask import Flask, request, jsonify, make_response, send_from_directory
-
-app = Flask(__name__, static_folder=BASE_DIR, static_url_path='')
+app = Flask(__name__)
 
 DB = "/tmp/cyber.db"
 init_error = None
