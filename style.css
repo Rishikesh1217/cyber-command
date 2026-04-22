@@ -408,6 +408,11 @@ p.subtitle {
     color: var(--accent-blue);
 }
 
+.sign-out-item {
+    margin-top: auto;
+    padding-top: 2rem;
+}
+
 .main-content {
     flex: 1;
     padding: 2rem;
@@ -601,6 +606,11 @@ input:checked + .slider:before { transform: translateX(26px); }
     }
     
     .nav-item { margin-bottom: 0; }
+    
+    .sign-out-item {
+        margin-top: 0;
+        padding-top: 0;
+    }
     
     .nav-link {
         flex-direction: column;
