@@ -5,11 +5,13 @@ import random
 import time
 import traceback
 
+# Base directory is the directory containing api folder
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from flask import Flask, request, jsonify, make_response
+from flask import Flask, request, jsonify, make_response, send_from_directory
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder=BASE_DIR, static_url_path='')
 
 DB = "/tmp/cyber.db"
 init_error = None
@@ -62,6 +64,17 @@ try:
     conn.close()
 except Exception as e:
     init_error = traceback.format_exc()
+
+# Serve Frontend
+@app.route('/')
+def serve_index():
+    return send_from_directory(BASE_DIR, 'index.html')
+
+@app.route('/<path:path>')
+def serve_static(path):
+    if os.path.exists(os.path.join(BASE_DIR, path)):
+        return send_from_directory(BASE_DIR, path)
+    return send_from_directory(BASE_DIR, 'index.html')
 
 @app.route('/api/health', methods=['GET'])
 def health():
