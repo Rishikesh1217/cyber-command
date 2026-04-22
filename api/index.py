@@ -65,16 +65,7 @@ try:
 except Exception as e:
     init_error = traceback.format_exc()
 
-# Serve Frontend
-@app.route('/')
-def serve_index():
-    return send_from_directory(BASE_DIR, 'index.html')
-
-@app.route('/<path:path>')
-def serve_static(path):
-    if os.path.exists(os.path.join(BASE_DIR, path)):
-        return send_from_directory(BASE_DIR, path)
-    return send_from_directory(BASE_DIR, 'index.html')
+# Static files handled by Vercel
 
 @app.route('/api/health', methods=['GET'])
 def health():
